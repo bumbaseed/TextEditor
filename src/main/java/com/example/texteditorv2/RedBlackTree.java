@@ -7,16 +7,17 @@ public class RedBlackTree {
         root = null;
     }
 
+    // Insert the piece / text into the tree structure. root is always black
+    void insert(Piece piece){
+        RBTreeNode node = new RBTreeNode(piece);
 
-    void insert(Piece newPiece){
-        RBTreeNode newNode = new RBTreeNode(newPiece);
-
-        if (root == null) {
-            root = newNode;
-        }else {
-            insertRec(root, newNode);
+        if (root == null){
+            root = node;
+            root.color = false;
+        } else {
+            insertRec(root, node);
         }
-        fixInsert(newNode);
+        fixInsert(node);
     }
 
     private void insertRec(RBTreeNode current, RBTreeNode newNode) {
@@ -67,10 +68,57 @@ public class RedBlackTree {
     }
 
     private void fixInsert(RBTreeNode node) {
-        // TODO - Fix the R/B properties after text insertion.
+        // TODO - Fix the R/B properties after text insertion - Depth, violations of leaves etc.
+        RBTreeNode parent, grandParent, uncle; // tree hierarchy minus children / leaves
+
+        while (node != root && node.color && node.parent.color){
+            parent = node.parent;
+            grandParent = parent.parent;
+
+            if (parent == grandParent.left) {
+                uncle = grandParent.right;
+                if (uncle != null && uncle.color){
+                    grandParent.color = true;
+                    parent.color = false;
+                    uncle.color = false;
+                    node = grandParent;
+                } else {
+                    if (node == parent.right) {
+                        rotateLeft(parent);
+                        node = parent;
+                        parent = node.parent;
+                    }
+                    rotateRight(grandParent);
+                    boolean tempColor = parent.color;
+                    parent.color = grandParent.color;
+                    grandParent.color = tempColor;
+                    node = parent;
+                }
+            } else {
+                uncle = grandParent.left;
+                if (uncle != null && node.color){
+                    grandParent.color = true; // red
+                    parent.color = false; // black
+                    uncle.color = false;
+                    node = grandParent;
+                } else {
+                    if (node == parent.left){
+                        rotateRight(parent);
+                        node = parent;
+                        parent = node.parent;
+                    }
+                    rotateLeft(grandParent);
+                    boolean tempColor = parent.color;
+                    parent.color = grandParent.color;
+                    grandParent.color = tempColor;
+                    node = parent;
+                }
+            }
+        }
+        root.color = false;
     }
 
-
+// update to accurately track changes
     private void updateSubtreeTextLength(RBTreeNode node) {
         if (node != null){
             node.subtreeLength = node.piece.length;
@@ -84,6 +132,47 @@ public class RedBlackTree {
         }
     }
 
+    // Rotation functions to help with fixing / balancing the tree
+
+    private void rotateLeft(RBTreeNode node){
+        RBTreeNode temp = node.right;
+        node.right = temp.left;
+
+        if (temp.left != null) {
+            temp.left.parent = node;
+        }
+        temp.parent = node.parent;
+
+        if (node.parent == null){
+            root = temp;
+        } else if (node == node.parent.left) {
+            node.parent.left = temp;
+        } else {
+            node.parent.right = temp;
+        }
+        temp.left = node;
+        node.parent = temp;
+    }
+
+    private void rotateRight(RBTreeNode node){
+        RBTreeNode temp = node.left;
+        node.left = temp.right;
+
+        if (temp.right != null) {
+            temp.right.parent = node;
+        }
+        temp.parent = node.parent;
+
+        if (node.parent == null) {
+            root = temp;
+        } else if (node == node.parent.right) {
+            node.parent.right = temp;
+        } else {
+            node.parent.left = temp;
+        }
+        temp.right = node;
+        node.parent = temp;
+    }
 
 
 
