@@ -22,6 +22,7 @@ public class CustomTextArea extends StyledTextArea<String, String> {
         super.replace(start, end, replacement);
         String newText = replacement.getText();
         pieceTable.insert(start, newText);
+        System.out.println("Replace method called with text: " + getText());
 
     }
 }
