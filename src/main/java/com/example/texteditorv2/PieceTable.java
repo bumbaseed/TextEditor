@@ -14,6 +14,17 @@ class PieceTable {
     void insert(int position, String text) {
         if (text.isEmpty()) return;
 
+        if (buffer.length() == 0 && position != 0){
+            throw new IllegalArgumentException("Cannot insert at position: " + position + "in empty buffer");
+        }
+
+        if (buffer.length() == 0){
+            Piece newPiece = new Piece(0, text.length());
+            pieces.insert(newPiece);
+            buffer.append(text);
+            return;
+        }
+
         System.out.println("Insert called with position: " + position + ", text: " + text);
 
         if (pieces.getRoot() == null) {
@@ -161,9 +172,11 @@ class PieceTable {
 
         if (position < leftLength) {
             return findNodePosition(position, node.getLeft());
-        } else if (position <= totalLength ) {
+        } else if (position < totalLength ) {
             return node;
-        } else if (node.getRight() != null){
+        } else if (position == totalLength && node.getRight() == null){
+            return node;
+        } else if (node.getRight() != null) {
             return findNodePosition(position - totalLength, node.getRight());
         } else {
             return null;
@@ -171,6 +184,9 @@ class PieceTable {
     }
 
     private RBTreeNode findPieceIndex(int position) {
+        if (position >= buffer.length()){
+            return null;
+        }
         return findNodePosition(position, pieces.getRoot());
     }
 
