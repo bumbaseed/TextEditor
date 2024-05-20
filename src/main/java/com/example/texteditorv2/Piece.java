@@ -3,7 +3,7 @@ package com.example.texteditorv2;
 
 public class Piece {
     private int start;
-    private final int length;
+    private int length;
 
     public Piece(int start, int length) {
         if (start < 0 || length < 0) {
@@ -29,6 +29,10 @@ public class Piece {
 
     public void setStart(int i) {
         this.start = start;
+    }
+
+    public void setLength(int i) {
+        this.length = length;
     }
 }
 

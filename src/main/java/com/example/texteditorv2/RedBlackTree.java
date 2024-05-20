@@ -181,7 +181,7 @@ public class RedBlackTree {
     void delete(Piece piece) {
         RBTreeNode node = findNode(root, piece.getStart());
         if (node != null && node.getPiece().equals(piece)) {
-            delete(node.getPiece());
+            deleteNode(node);
         }
     }
 
@@ -195,21 +195,24 @@ public class RedBlackTree {
             if (child != null){
                 child.setParent(node.getParent());
             }
-            if (node.getParent() != null) {
+            if (node.getParent() == null) {
                 root = child;
             } else if (node == node.getParent().getLeft()) {
                 node.getParent().setLeft(child);
             } else {
                 node.getParent().setRight(child );
             }
-            if (node.isColor() == false){
+            if (!node.isColor()){
                 fixDelete(child);
             }
         }
     }
 
     private void fixDelete(RBTreeNode node){
-        while(node != root && (node == null || node.isColor() == false)){
+        while(node != root && (node == null || !node.isColor())){
+            if (node == null){
+                break;
+            }
             if (node == node.getParent().getLeft()){
                 RBTreeNode sibling = node.getParent().getRight();
                 if (sibling.isColor()){
@@ -218,11 +221,11 @@ public class RedBlackTree {
                     rotateLeft(node.getParent());
                     sibling = node.getParent().getRight();
                 }
-                if ((sibling.getLeft() == null || sibling.getLeft().isColor() == false) && (sibling.getRight() == null || sibling.getRight().isColor() == false)) {
+                if ((sibling.getLeft() == null || !sibling.getLeft().isColor()) && (sibling.getRight() == null || !sibling.getRight().isColor())) {
                     sibling.setColor(true);
                     node = node.getParent();
                 }else {
-                    if (sibling.getRight() == null || sibling.getRight().isColor() == false){
+                    if (sibling.getRight() == null || !sibling.getRight().isColor()){
                         sibling.getLeft().setColor(false);
                         sibling.setColor(true);
                         rotateRight(sibling);
@@ -235,31 +238,28 @@ public class RedBlackTree {
                     node = root;
                 }
             } else {
-                if (node == node.getParent().getRight()) {
-                    RBTreeNode sibling = node.getParent().getLeft();
-                    if (sibling.isColor()){
-                        sibling.setColor(false);
-                        node.getParent().setColor(true);
-                        rotateRight(node.getParent());
+                RBTreeNode sibling = node.getParent().getLeft();
+                if (sibling.isColor()) {
+                    sibling.setColor(false);
+                    node.getParent().setColor(true);
+                    rotateRight(node.getParent());
+                    sibling = node.getParent().getLeft();
+                }
+                if ((sibling.getLeft() == null || !sibling.getLeft().isColor()) && (sibling.getRight() == null || !sibling.getRight().isColor())) {
+                    sibling.setColor(true);
+                    node = node.getParent();
+                } else {
+                    if (sibling.getLeft() == null || !sibling.getLeft().isColor()){
+                        sibling.getRight().setColor(false);
+                        sibling.setColor(true);
+                        rotateLeft(sibling);
                         sibling = node.getParent().getLeft();
                     }
-                    if ((sibling.getRight() == null || sibling.getRight().isColor() == false) && (sibling.getLeft() == null ||  sibling.getLeft().isColor() == false)) {
-                        sibling.setColor(true);
-                        node = node.getParent();
-                    } else {
-                        if (sibling.getLeft() == null || sibling.getLeft().isColor() == false) {
-                            sibling.getRight().setColor(false);
-                            sibling.setColor(true);
-                            rotateLeft(sibling);
-                            sibling = node.getParent().getLeft();
-                        }
-                        sibling.setColor(node.getParent().isColor());
-                        node.getParent().setColor(false);
-                        sibling.getLeft().setColor(false);
-                        rotateRight(node.getParent());
-                        node = root;
-
-                    }
+                    sibling.setColor(node.getParent().isColor());
+                    node.getParent().setColor(false);
+                    sibling.getLeft().setColor(false);
+                    rotateRight(node.getParent());
+                    node = root;
                 }
             }
 

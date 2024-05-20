@@ -186,6 +186,90 @@ class PieceTable {
         logTreeNode(node.getRight(), depth + 1);
     }
 
+    void delete(int startPos, int endPos){
+        if (startPos < 0 || endPos > buffer.length() || startPos > endPos) {
+            throw new IllegalArgumentException("Invalid DELETE range");
+        }
+
+        RBTreeNode startNode = findNode(startPos);
+        RBTreeNode endNode = findNode(endPos);
+
+        if (startNode == null || endNode == null) {
+            return;
+        }
+
+        Piece startPiece = startNode.getPiece();
+        Piece endPiece = endNode.getPiece();
+
+        int startOffset = startPos - calculatePosition(startNode);
+        int endOffset = endPos - calculatePosition(endNode);
+
+        System.out.println("Delete operation:");
+        System.out.println("Start position: " + startPos);
+        System.out.println("End position: " + endPos);
+        System.out.println("Start piece: " + startPiece);
+        System.out.println("End piece: " + endPiece);
+        System.out.println("Start offset: " + startOffset);
+        System.out.println("End offset: " + endOffset);
+
+        if (startPiece == endPiece) {
+            if (startOffset == 0 && endOffset == startPiece.getLength()) {
+                pieces.delete(startPiece);
+            } else if (startOffset == 0) {
+                startPiece.setStart(startPiece.getStart() + endOffset);
+                startPiece.setLength(startPiece.getLength() - endOffset);
+                updateSubtreeLength(startPiece);
+            } else if (endOffset == startPiece.getLength()) {
+                startPiece.setLength(startOffset);
+                updateSubtreeLength(startPiece);
+            } else {
+                if (startOffset >= 0 && startPiece.getLength() - endOffset >= 0) {
+                    Piece leftPiece = new Piece(startPiece.getStart(), startOffset);
+                    Piece rightPiece = new Piece(startPiece.getStart() + endOffset, startPiece.getLength() - endOffset);
+
+                    pieces.delete(startPiece);
+                    pieces.insert(leftPiece);
+                    pieces.insert(rightPiece);
+                } else {
+                    System.out.println("Invalid startOffset or endOffset for single piece deletion.");
+                }
+            }
+        } else {
+            if (startOffset == 0) {
+                pieces.delete(startPiece);
+            } else if (startOffset > 0 && startOffset < startPiece.getLength()) {
+                startPiece.setLength(startOffset);
+                updateSubtreeLength(startPiece);
+            } else {
+                System.out.println("Invalid startOffset for multi-piece deletion.");
+            }
+
+            RBTreeNode node = successor(startNode);
+            while (node != null && node != endNode) {
+                RBTreeNode next = successor(node);
+                pieces.delete(node.getPiece());
+                node = next;
+            }
+
+            if (endOffset == endPiece.getLength()) {
+                pieces.delete(endPiece);
+            } else if (endOffset >= 0 && endOffset < endPiece.getLength()) {
+                endPiece.setStart(endPiece.getStart() + endOffset);
+                endPiece.setLength(endPiece.getLength() - endOffset);
+                updateSubtreeLength(endPiece);
+            } else {
+                System.out.println("Invalid endOffset for multi-piece deletion.");
+            }
+        }
+
+        buffer.delete(startPos, endPos);
+        updateStartPosition(endPos, startPos - endPos);
+
+        System.out.println("Buffer after deletion: " + buffer.toString());
+        logTreeStructure();
+
+    }
+
 
 }
 

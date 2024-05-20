@@ -21,7 +21,13 @@ public class CustomTextArea extends StyledTextArea<String, String> {
     public void replace(int start, int end, StyledDocument<String, String, String> replacement){
         super.replace(start, end, replacement);
         String newText = replacement.getText();
-        pieceTable.insert(start, newText);
+        if (start == end) {
+            // Insertion case
+            pieceTable.insert(start, newText);
+        } else {
+            // Deletion case
+            pieceTable.delete(start, end);
+        }
         System.out.println("Replace method called with text: " + getText());
 
     }
