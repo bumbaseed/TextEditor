@@ -20,7 +20,7 @@ public class RedBlackTree {
             fixInsert(node);
             updateSubtreeTextLength(node);
         }
-        logTreeStructure(); // Log tree structure after insertion
+        logTreeStructure();
     }
 
     private void insertRec(RBTreeNode current, RBTreeNode newNode) {
@@ -199,8 +199,14 @@ public class RedBlackTree {
                 root = child;
             } else if (node == node.getParent().getLeft()) {
                 node.getParent().setLeft(child);
+                if (child != null){
+                    updateSubtreeTextLength(child);
+                }
             } else {
-                node.getParent().setRight(child );
+                node.getParent().setRight(child);
+                if (child != null){
+                    updateSubtreeTextLength(child);
+                }
             }
             if (!node.isColor()){
                 fixDelete(child);
@@ -262,10 +268,13 @@ public class RedBlackTree {
                     node = root;
                 }
             }
-
         }
-        if (node != null){
+        if  (node != null){
             node.setColor(false);
+        }
+
+        if (root != null){
+            root.setColor(false);
         }
     }
 
@@ -276,6 +285,23 @@ public class RedBlackTree {
         }
         return node;
     }
+
+//    public Piece find(int pos) {
+//        // Logic to find the piece containing position 'pos'
+//        RBTreeNode current = root;
+//        while (current != null) {
+//            int leftLength = (current.left != null) ? current.left.subtreeLength : 0;
+//            if (pos < leftLength) {
+//                current = current.left;
+//            } else if (pos >= leftLength + current.piece.getLength()) {
+//                pos -= leftLength + current.piece.getLength();
+//                current = current.right;
+//            } else {
+//                return current.piece;
+//            }
+//        }
+//        return null;
+//    }
 
     private void logTreeStructure() {
         System.out.println("Current tree structure:");

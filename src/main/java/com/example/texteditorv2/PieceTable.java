@@ -8,7 +8,6 @@ class PieceTable {
         buffer = new StringBuilder();
         pieces = new RedBlackTree();
         System.out.println("Initialized PieceTable");
-        logTreeStructure(); // Log initial tree structure
     }
 
     void insert(int position, String text) {
@@ -28,23 +27,28 @@ class PieceTable {
         System.out.println("Insert called with position: " + position + ", text: " + text);
 
         if (pieces.getRoot() == null) {
+            if (position != 0){
+                throw new IllegalArgumentException("Invalid insert position for an empty tree");
+            }
             // Initialize with the first piece if the tree is empty
             Piece firstPiece = new Piece(0, text.length());
             pieces.insert(firstPiece);
             buffer.append(text);
             System.out.println("Inserted initial piece: " + firstPiece);
-            System.out.println("Tree structure after initial piece insert: ");
-            logTreeStructure(); // Log tree structure after initial piece
+//            System.out.println("Tree structure after initial piece insert: ");
             return;
         }
 
         RBTreeNode node = findPieceIndex(position);
         if (node == null) {
+            int startPos = buffer.length();
+            if (startPos < 0){
+                throw new IllegalArgumentException("Invalid startPos");
+            }
             Piece newPiece = new Piece(buffer.length(), text.length());
             pieces.insert(newPiece);
             buffer.append(text);
             System.out.println("Inserted new piece at the end: " + newPiece);
-            logTreeStructure();
             return;
         }
 
@@ -52,19 +56,40 @@ class PieceTable {
         int offset = position - calculatePosition(node);
         // System.out.println("Inserting at position: " + position + ", found piece: " + piece + ", offset: " + offset);
 
+        if (offset < 0 || offset > piece.getLength()){
+            throw new IllegalArgumentException("Invalid insert position");
+        }
+
         if (offset == 0){
-            Piece newPiece = new Piece(piece.getStart(), text.length());
+            int startPos = piece.getStart();
+            if (startPos < 0){
+                throw new IllegalArgumentException("Invalid start position");
+            }
+            Piece newPiece = new Piece(startPos, text.length());
             pieces.insert(newPiece);
-            buffer.insert(piece.getStart(), text);
-            updateStartPosition(piece.getStart() + offset + text.length(), text.length());
+            buffer.insert(startPos, text);
+            updateStartPosition(startPos + text.length(), text.length());
         } else if (offset == piece.getLength()) {
-            Piece newPiece = new Piece(piece.getStart() + piece.getLength(), text.length());
+            int startPos = piece.getStart() + piece.getLength();
+            if (startPos < 0){
+                throw new IllegalArgumentException("Invalid start position");
+            }
+            Piece newPiece = new Piece(startPos, text.length());
             pieces.insert(newPiece);
-            buffer.insert(piece.getStart() + piece.getLength(), text);
-            updateStartPosition(piece.getStart() + offset + text.length(), text.length());
+            buffer.insert(startPos, text);
+            updateStartPosition(startPos, text.length());
         } else {
-            Piece leftPiece = new Piece(piece.getStart(), offset);
-            Piece rightPiece = new Piece(piece.getStart() + offset + text.length(), piece.getLength() - offset);
+            int leftStartPos = piece.getStart();
+            int leftLength = offset;
+            int rightStartPos = piece.getStart() + offset + text.length();
+            int rightLength = piece.getLength() - offset;
+
+            if (leftStartPos < 0 || leftLength < 0 || rightStartPos < 0 || rightLength < 0){
+                throw new IllegalArgumentException("Invalid piece split");
+            }
+
+            Piece leftPiece = new Piece(leftStartPos, leftLength);
+            Piece rightPiece = new Piece(rightStartPos, rightLength);
             Piece newPiece = new Piece(piece.getStart() + offset, text.length());
 
 
@@ -84,7 +109,7 @@ class PieceTable {
             updateSubtreeLength(newPiece);
             updateSubtreeLength(rightPiece);
         }
-        System.out.println("Buffer after insertion: " + buffer.toString());
+        System.out.println("Buffer after insertion: " + buffer);
         // Log tree structure
         logTreeStructure();
     }
@@ -100,7 +125,7 @@ class PieceTable {
     private void updateStartPosition(int startPosition, int textLength){
         RBTreeNode node = findNode(startPosition);
         while (node != null){
-            if (node.getPiece().getStart() >= startPosition){
+            if (node.getPiece().getStart() > startPosition){
                 node.getPiece().setStart(node.getPiece().getStart() + textLength);
             }
             node = successor(node);
@@ -203,12 +228,13 @@ class PieceTable {
     }
 
     void delete(int startPos, int endPos){
+        System.out.println("Delete operation: Start position: " + startPos + ", End position: " + endPos);
         if (startPos < 0 || endPos > buffer.length() || startPos > endPos) {
             throw new IllegalArgumentException("Invalid DELETE range");
         }
 
         RBTreeNode startNode = findNode(startPos);
-        RBTreeNode endNode = findNode(endPos);
+        RBTreeNode endNode = findNode(endPos - 1);
 
         if (startNode == null || endNode == null) {
             return;
@@ -218,8 +244,9 @@ class PieceTable {
         Piece endPiece = endNode.getPiece();
 
         int startOffset = startPos - calculatePosition(startNode);
-        int endOffset = endPos - calculatePosition(endNode);
+        int endOffset = startOffset + (endPos - startPos);
 
+        // Logging for testing / tracking
         System.out.println("Delete operation:");
         System.out.println("Start position: " + startPos);
         System.out.println("End position: " + endPos);
@@ -228,62 +255,71 @@ class PieceTable {
         System.out.println("Start offset: " + startOffset);
         System.out.println("End offset: " + endOffset);
 
+        if (startOffset < 0 || startOffset > startPiece.getLength() || endOffset < startOffset || endOffset > endPiece.getLength() + 1) {
+            throw new IllegalArgumentException("Invalid offsets");
+        }
+
+        if (startPos == endPos){
+            return;
+        }
+
         if (startPiece == endPiece) {
             if (startOffset == 0 && endOffset == startPiece.getLength()) {
+                // delete entire piece
                 pieces.delete(startPiece);
-            } else if (startOffset == 0) {
-                startPiece.setStart(startPiece.getStart() + endOffset);
-                startPiece.setLength(startPiece.getLength() - endOffset);
-                updateSubtreeLength(startPiece);
-            } else if (endOffset == startPiece.getLength()) {
-                startPiece.setLength(startOffset);
-                updateSubtreeLength(startPiece);
+                updateSubtreeLength(startNode, -startPiece.getLength());
             } else {
-                if (startOffset >= 0 && startPiece.getLength() - endOffset >= 0) {
-                    Piece leftPiece = new Piece(startPiece.getStart(), startOffset);
-                    Piece rightPiece = new Piece(startPiece.getStart() + endOffset, startPiece.getLength() - endOffset);
-
-                    pieces.delete(startPiece);
-                    pieces.insert(leftPiece);
-                    pieces.insert(rightPiece);
-                } else {
-                    System.out.println("Invalid startOffset or endOffset for single piece deletion.");
-                }
+                int deletedLength = endOffset - startOffset;
+                startPiece.setStart(startPiece.getStart() + startOffset);
+                startPiece.setLength(startPiece.getLength() - deletedLength);
+                updateSubtreeLength(startNode, -deletedLength);
             }
         } else {
-            if (startOffset == 0) {
+            if (startOffset == 0){
                 pieces.delete(startPiece);
-            } else if (startOffset > 0 && startOffset < startPiece.getLength()) {
-                startPiece.setLength(startOffset);
-                updateSubtreeLength(startPiece);
+                updateSubtreeLength(startNode, -startPiece.getLength());
             } else {
-                System.out.println("Invalid startOffset for multi-piece deletion.");
+                startPiece.setLength(startOffset);
+                updateSubtreeLength(startNode, startOffset - startPiece.getLength());
             }
 
+            if (endOffset == endPiece.getLength()){
+                pieces.delete(endPiece);
+                updateSubtreeLength(endNode, -endPiece.getLength());
+            } else {
+                int deletedLength = endOffset;
+                endPiece.setStart(endPiece.getStart() + deletedLength);
+                endPiece.setLength(endPiece.getLength() - deletedLength);
+                updateSubtreeLength(endNode, -deletedLength);
+            }
+
+            // deleting pieces between start and end pieces.
             RBTreeNode node = successor(startNode);
             while (node != null && node != endNode) {
                 RBTreeNode next = successor(node);
+                int deletedLength = node.getPiece().getLength();
                 pieces.delete(node.getPiece());
+                updateSubtreeLength(node, -deletedLength);
                 node = next;
             }
 
-            if (endOffset == endPiece.getLength()) {
-                pieces.delete(endPiece);
-            } else if (endOffset >= 0 && endOffset < endPiece.getLength()) {
-                endPiece.setStart(endPiece.getStart() + endOffset);
-                endPiece.setLength(endPiece.getLength() - endOffset);
-                updateSubtreeLength(endPiece);
-            } else {
-                System.out.println("Invalid endOffset for multi-piece deletion.");
-            }
         }
 
         buffer.delete(startPos, endPos);
         updateStartPosition(endPos, startPos - endPos);
 
-        System.out.println("Buffer after deletion: " + buffer.toString());
-        logTreeStructure();
+        System.out.println("Buffer after deletion: " + buffer);
+    }
 
+//    private Piece findPiece(int pos) {
+//        return pieces.find(pos);
+//    }
+
+    private void updateSubtreeLength(RBTreeNode node, int lengthDiff) {
+        while (node != null) {
+            node.setSubtreeLength(node.getSubtreeLength() + lengthDiff);
+            node = node.getParent();
+        }
     }
 
 
