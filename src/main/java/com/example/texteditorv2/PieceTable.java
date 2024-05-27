@@ -134,7 +134,7 @@ class PieceTable {
     private void updateStartPosition(int startPosition, int textLength) {
         RBTreeNode node = findNode(startPosition);
         while (node != null) {
-            if (node.getPiece().getStart() >= startPosition) {
+            if (node.getPiece().getStart() > startPosition) {
                 node.getPiece().setStart(node.getPiece().getStart() + textLength);
             }
             node = successor(node);
@@ -236,6 +236,7 @@ class PieceTable {
         logTreeNode(node.getRight(), depth + 1);
     }
 
+
     void delete(int startPos, int endPos) {
         System.out.println("Delete operation:");
         System.out.println("Start position: " + startPos);
@@ -263,6 +264,10 @@ class PieceTable {
 
         System.out.println("Start offset: " + startOffset);
         System.out.println("End offset: " + endOffset);
+
+        System.out.println("Buffer before deletion: " + buffer);
+        buffer.delete(startPos, endPos);
+        System.out.println("Buffer after deletion: " + buffer);
 
         if (startOffset < 0 || startOffset > startPiece.getLength() || endOffset < startOffset || endOffset > endPiece.getLength() + 1) {
             throw new IllegalArgumentException("Invalid offsets");
@@ -317,8 +322,11 @@ class PieceTable {
         System.out.println("End pos: " + endPos);
         System.out.println("Buffer before deletion: " + buffer);
         buffer.delete(startPos, endPos);
-        updateStartPosition(endPos, startPos - endPos);
         System.out.println("Buffer after deletion: " + buffer);
+
+        System.out.println("Updating start positions from: " + endPos + " with diff: " + (startPos - endPos));
+        updateStartPosition(endPos, startPos - endPos);
+        System.out.println("Buffer after updating start positions: " + buffer);
     }
 
     protected void updateTreeData(RBTreeNode node, int lengthDiff, int lineCountDiff) {
