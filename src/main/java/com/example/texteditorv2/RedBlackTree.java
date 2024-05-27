@@ -3,317 +3,265 @@ package com.example.texteditorv2;
 public class RedBlackTree {
     private RBTreeNode root;
 
-    RedBlackTree(){
-        root = null;
-    }
-
-    void insert(Piece piece){
-        RBTreeNode node = new RBTreeNode(piece);
-        System.out.println("Inserting piece: " + piece);
-
-        if (root == null){
-            root = node;
-            root.setColor(false);
-            System.out.println("Inserted root node: " + node);
-        } else {
-            insertRec(root, node);
-            fixInsert(node);
-            updateSubtreeTextLength(node);
-        }
-        logTreeStructure();
-    }
-
-    private void insertRec(RBTreeNode current, RBTreeNode newNode) {
-        current.setSubtreeLength(current.getSubtreeLength() + newNode.getPiece().getLength());
-
-        if (newNode.getPiece().getStart() < current.getPiece().getStart()) {
-            if (current.getLeft() == null){
-                current.setLeft(newNode);
-                newNode.setParent(current);
-                System.out.println("Inserted left node: " + newNode + " under parent: " + current);
-            } else {
-                insertRec(current.getLeft(), newNode);
-            }
-        } else {
-            if (current.getRight() == null){
-                current.setRight(newNode);
-                newNode.setParent(current);
-                System.out.println("Inserted right node: " + newNode + " under parent: " + current);
-            } else {
-                insertRec(current.getRight(), newNode);
-            }
-        }
-    }
-
-
-    private RBTreeNode findNode(RBTreeNode node, int index) {
-        if (node == null) return null;
-
-        int leftLength = (node.getLeft() != null) ? node.getLeft().getSubtreeLength() : 0;
-        int totalLength = leftLength + node.getPiece().getLength();
-
-        if (index < leftLength) {
-            return findNode(node.getLeft(), index);
-        } else if (index < totalLength) {
-            return node;
-        } else if (node.getRight() != null) {
-            return findNode(node.getRight(), index - totalLength);
-        } else {
-            return null;
-        }
-    }
-
-    RBTreeNode getRoot(){
+    public RBTreeNode getRoot() {
         return root;
     }
 
+    public void insert(Piece piece) {
+        RBTreeNode newNode = new RBTreeNode(piece);
+        insertNode(newNode);
+    }
+
+    public void delete(Piece piece) {
+        RBTreeNode node = findNode(piece.getStart());
+        if (node != null && node.getPiece().equals(piece)) {
+            deleteNode(node);
+        }
+    }
+    // x starts at root, traverses to find the appropriate position for new node.
+    // y tracks parent of x. y will be parent of the new node after loop is completed
+    private void insertNode(RBTreeNode node) {
+        RBTreeNode y = null;
+        RBTreeNode x = root;
+        while (x != null) {
+            y = x;
+            if (node.getPiece().getStart() < x.getPiece().getStart()) {
+                x = x.getLeft();
+            } else {
+                x = x.getRight();
+            }
+        }
+        node.setParent(y);
+        if (y == null) {
+            root = node;
+        } else if (node.getPiece().getStart() < y.getPiece().getStart()) {
+            y.setLeft(node);
+        } else {
+            y.setRight(node);
+        }
+        node.setLeft(null);
+        node.setRight(null);
+        node.setColor(true);
+
+        fixInsert(node);
+    }
+
     private void fixInsert(RBTreeNode node) {
-        RBTreeNode parent, grandParent, uncle;
-
-        while (node != root && node.isColor() && node.getParent().isColor()) {
-            parent = node.getParent();
-            grandParent = parent.getParent();
-
-            if (parent == grandParent.getLeft()) {
-                uncle = grandParent.getRight();
-                if (uncle != null && uncle.isColor()){
-                    grandParent.setColor(true);
-                    parent.setColor(false);
-                    uncle.setColor(false);
-                    node = grandParent;
+        while (node != null && node != root && node.getParent().isColor()) {
+            if (node.getParent() == node.getParent().getParent().getLeft()) {
+                RBTreeNode y = node.getParent().getParent().getRight();
+                if (y != null && y.isColor()) {
+                    node.getParent().setColor(false);
+                    y.setColor(false);
+                    node.getParent().getParent().setColor(true);
+                    node = node.getParent().getParent();
                 } else {
-                    if (node == parent.getRight()) {
-                        rotateLeft(parent);
-                        node = parent;
-                        parent = node.getParent();
+                    if (node == node.getParent().getRight()) {
+                        node = node.getParent();
+                        rotateLeft(node);
                     }
-                    rotateRight(grandParent);
-                    boolean tempColor = parent.isColor();
-                    parent.setColor(grandParent.isColor());
-                    grandParent.setColor(tempColor);
-                    node = parent;
+                    node.getParent().setColor(false);
+                    node.getParent().getParent().setColor(true);
+                    rotateRight(node.getParent().getParent());
                 }
             } else {
-                uncle = grandParent.getLeft();
-                if (uncle != null && uncle.isColor()){
-                    grandParent.setColor(true);
-                    parent.setColor(false);
-                    uncle.setColor(false);
-                    node = grandParent;
+                RBTreeNode y = node.getParent().getParent().getLeft();
+                if (y != null && y.isColor()) {
+                    node.getParent().setColor(false);
+                    y.setColor(false);
+                    node.getParent().getParent().setColor(true);
+                    node = node.getParent().getParent();
                 } else {
-                    if (node == parent.getLeft()){
-                        rotateRight(parent);
-                        node = parent;
-                        parent = node.getParent();
+                    if (node == node.getParent().getLeft()) {
+                        node = node.getParent();
+                        rotateRight(node);
                     }
-                    rotateLeft(grandParent);
-                    boolean tempColor = parent.isColor();
-                    parent.setColor(grandParent.isColor());
-                    grandParent.setColor(tempColor);
-                    node = parent;
+                    node.getParent().setColor(false);
+                    node.getParent().getParent().setColor(true);
+                    rotateLeft(node.getParent().getParent());
                 }
             }
         }
         root.setColor(false);
     }
 
-    private void updateSubtreeTextLength(RBTreeNode node) {
-        if (node != null) {
-            node.setSubtreeLength(node.getPiece().getLength());
-            if (node.getLeft() != null) {
-                node.setSubtreeLength(node.getSubtreeLength() + node.getLeft().getSubtreeLength());
-            }
-            if (node.getRight() != null) {
-                node.setSubtreeLength(node.getSubtreeLength() + node.getRight().getSubtreeLength());
-            }
-            if (node.getParent() != null) {
-                updateSubtreeTextLength(node.getParent());
-            }
+    // y is used to identify the node to be deleted or its successor
+    // x is the childd of y that replaces y in the tree
+    private void deleteNode(RBTreeNode node) {
+        RBTreeNode y = (node.getLeft() == null || node.getRight() == null) ? node : successor(node);
+        RBTreeNode x = (y.getLeft() != null) ? y.getLeft() : y.getRight();
+        if (x != null) {
+            x.setParent(y.getParent());
+        }
+        if (y.getParent() == null) {
+            root = x;
+        } else if (y == y.getParent().getLeft()) {
+            y.getParent().setLeft(x);
+        } else {
+            y.getParent().setRight(x);
+        }
+        if (y != node) {
+            node.setPiece(y.getPiece());
+            node.setSubtreeLength(y.getSubtreeLength());
+            node.setSubtreeLFLeft(y.getSubtreeLFLeft());
+
+
+        }
+        if (!y.isColor()) {
+            fixDelete(x, y.getParent());
         }
     }
 
-    private void rotateLeft(RBTreeNode node) {
-        RBTreeNode temp = node.getRight();
-        node.setRight(temp.getLeft());
-
-        if (temp.getLeft() != null) {
-            temp.getLeft().setParent(node);
+    // w is sibling of x. allows different operations to be performed based on the color of the child node.
+    private void fixDelete(RBTreeNode node, RBTreeNode parent) {
+        while (node != root && (node == null || !node.isColor())) {
+            if (node == parent.getLeft()) {
+                RBTreeNode w = parent.getRight();
+                if (w != null && w.isColor()) {
+                    w.setColor(false);
+                    parent.setColor(true);
+                    rotateLeft(parent);
+                    w = parent.getRight();
+                }
+                assert w != null;
+                if ((w.getLeft() == null || !w.getLeft().isColor()) && (w.getRight() == null || !w.getRight().isColor())) {
+                    w.setColor(true);
+                    node = parent;
+                    parent = node.getParent();
+                } else {
+                    if (w.getRight() == null || !w.getRight().isColor()) {
+                        if (w.getLeft() != null) {
+                            w.getLeft().setColor(false);
+                        }
+                        w.setColor(true);
+                        rotateRight(w);
+                        w = parent.getRight();
+                    }
+                    w.setColor(parent.isColor());
+                    parent.setColor(false);
+                    if (w.getRight() != null) {
+                        w.getRight().setColor(false);
+                    }
+                    rotateLeft(parent);
+                    node = root;
+                }
+            } else {
+                RBTreeNode w = parent.getLeft();
+                if (w != null && w.isColor()) {
+                    w.setColor(false);
+                    parent.setColor(true);
+                    rotateRight(parent);
+                    w = parent.getLeft();
+                }
+                assert w != null;
+                if ((w.getLeft() == null || !w.getLeft().isColor()) && (w.getRight() == null || !w.getRight().isColor())) {
+                    w.setColor(true);
+                    node = parent;
+                    parent = node.getParent();
+                } else {
+                    if (w.getLeft() == null || !w.getLeft().isColor()) {
+                        if (w.getRight() != null) {
+                            w.getRight().setColor(false);
+                        }
+                        w.setColor(true);
+                        rotateLeft(w);
+                        w = parent.getLeft();
+                    }
+                    w.setColor(parent.isColor());
+                    parent.setColor(false);
+                    if (w.getLeft() != null) {
+                        w.getLeft().setColor(false);
+                    }
+                    rotateRight(parent);
+                    node = root;
+                }
+            }
         }
-        temp.setParent(node.getParent());
+        if (node != null) {
+            node.setColor(false);
+        }
+    }
 
+    private void updateNodeMetadata(RBTreeNode node, int lengthDiff, int lineFeedCntDiff) {
+        while (node != null) {
+            node.setSubtreeLength(node.getSubtreeLength() + lengthDiff);
+            node.setSubtreeLFLeft(node.getSubtreeLFLeft() + lineFeedCntDiff);
+            int sizeLeftDiff = 0;
+            node.setSizeLeft(node.getSizeLeft() + sizeLeftDiff);
+            node = node.getParent();
+        }
+    }
+        private void rotateLeft(RBTreeNode node) {
+        RBTreeNode y = node.getRight();
+        node.setRight(y.getLeft());
+        if (y.getLeft() != null) {
+            y.getLeft().setParent(node);
+        }
+        y.setParent(node.getParent());
         if (node.getParent() == null) {
-            root = temp;
+            root = y;
         } else if (node == node.getParent().getLeft()) {
-            node.getParent().setLeft(temp);
+            node.getParent().setLeft(y);
         } else {
-            node.getParent().setRight(temp);
+            node.getParent().setRight(y);
         }
-        temp.setLeft(node);
-        node.setParent(temp);
-
-        updateSubtreeTextLength(node);
-        updateSubtreeTextLength(temp);
+        y.setLeft(node);
+        node.setParent(y);
     }
 
     private void rotateRight(RBTreeNode node) {
-        RBTreeNode temp = node.getLeft();
-        node.setLeft(temp.getRight());
-
-        if (temp.getRight() != null) {
-            temp.getRight().setParent(node);
+        RBTreeNode y = node.getLeft();
+        node.setLeft(y.getRight());
+        if (y.getRight() != null) {
+            y.getRight().setParent(node);
         }
-        temp.setParent(node.getParent());
-
+        y.setParent(node.getParent());
         if (node.getParent() == null) {
-            root = temp;
+            root = y;
         } else if (node == node.getParent().getRight()) {
-            node.getParent().setRight(temp);
+            node.getParent().setRight(y);
         } else {
-            node.getParent().setLeft(temp);
+            node.getParent().setLeft(y);
         }
-        temp.setRight(node);
-        node.setParent(temp);
-
-        updateSubtreeTextLength(node);
-        updateSubtreeTextLength(temp);
+        y.setRight(node);
+        node.setParent(y);
     }
 
-    void delete(Piece piece) {
-        RBTreeNode node = findNode(root, piece.getStart());
-        if (node != null && node.getPiece().equals(piece)) {
-            deleteNode(node);
-        }
-    }
-
-    private void deleteNode(RBTreeNode node){
-        if (node.getLeft() != null && node.getRight() != null){
-            RBTreeNode successor = findMinimum(node.getRight());
-            node.setPiece(successor.getPiece());
-            deleteNode(successor);
-        }else {
-            RBTreeNode child = (node.getLeft() != null) ? node.getLeft() : node.getRight();
-            if (child != null){
-                child.setParent(node.getParent());
-            }
-            if (node.getParent() == null) {
-                root = child;
-            } else if (node == node.getParent().getLeft()) {
-                node.getParent().setLeft(child);
-                if (child != null){
-                    updateSubtreeTextLength(child);
-                }
+    public RBTreeNode findNode(int start) {
+        RBTreeNode current = root;
+        while (current != null) {
+            if (start < current.getPiece().getStart()) {
+                current = current.getLeft();
+            } else if (start > current.getPiece().getStart()) {
+                current = current.getRight();
             } else {
-                node.getParent().setRight(child);
-                if (child != null){
-                    updateSubtreeTextLength(child);
-                }
-            }
-            if (!node.isColor()){
-                fixDelete(child);
+                return current;
             }
         }
+        return null;
     }
 
-    private void fixDelete(RBTreeNode node){
-        while(node != root && (node == null || !node.isColor())){
-            if (node == null){
-                break;
-            }
-            if (node == node.getParent().getLeft()){
-                RBTreeNode sibling = node.getParent().getRight();
-                if (sibling.isColor()){
-                    sibling.setColor(false);
-                    node.getParent().setColor(true);
-                    rotateLeft(node.getParent());
-                    sibling = node.getParent().getRight();
-                }
-                if ((sibling.getLeft() == null || !sibling.getLeft().isColor()) && (sibling.getRight() == null || !sibling.getRight().isColor())) {
-                    sibling.setColor(true);
-                    node = node.getParent();
-                }else {
-                    if (sibling.getRight() == null || !sibling.getRight().isColor()){
-                        sibling.getLeft().setColor(false);
-                        sibling.setColor(true);
-                        rotateRight(sibling);
-                        sibling = node.getParent().getRight();
-                    }
-                    sibling.setColor(node.getParent().isColor());
-                    node.getParent().setColor(false);
-                    sibling.getRight().setColor(false);
-                    rotateLeft(node.getParent());
-                    node = root;
-                }
-            } else {
-                RBTreeNode sibling = node.getParent().getLeft();
-                if (sibling.isColor()) {
-                    sibling.setColor(false);
-                    node.getParent().setColor(true);
-                    rotateRight(node.getParent());
-                    sibling = node.getParent().getLeft();
-                }
-                if ((sibling.getLeft() == null || !sibling.getLeft().isColor()) && (sibling.getRight() == null || !sibling.getRight().isColor())) {
-                    sibling.setColor(true);
-                    node = node.getParent();
-                } else {
-                    if (sibling.getLeft() == null || !sibling.getLeft().isColor()){
-                        sibling.getRight().setColor(false);
-                        sibling.setColor(true);
-                        rotateLeft(sibling);
-                        sibling = node.getParent().getLeft();
-                    }
-                    sibling.setColor(node.getParent().isColor());
-                    node.getParent().setColor(false);
-                    sibling.getLeft().setColor(false);
-                    rotateRight(node.getParent());
-                    node = root;
-                }
-            }
+    private RBTreeNode successor(RBTreeNode node) {
+        if (node.getRight() != null) {
+            return findMinimum(node.getRight());
         }
-        if  (node != null){
-            node.setColor(false);
+        RBTreeNode parent = node.getParent();
+        while (parent != null && node == parent.getRight()) {
+            node = parent;
+            parent = parent.getParent();
         }
-
-        if (root != null){
-            root.setColor(false);
-        }
+        return parent;
     }
 
-
-    private RBTreeNode findMinimum(RBTreeNode node){
-        while (node.getLeft() != null){
+    private RBTreeNode findMinimum(RBTreeNode node) {
+        while (node.getLeft() != null) {
             node = node.getLeft();
         }
         return node;
     }
-
-//    public Piece find(int pos) {
-//        // Logic to find the piece containing position 'pos'
-//        RBTreeNode current = root;
-//        while (current != null) {
-//            int leftLength = (current.left != null) ? current.left.subtreeLength : 0;
-//            if (pos < leftLength) {
-//                current = current.left;
-//            } else if (pos >= leftLength + current.piece.getLength()) {
-//                pos -= leftLength + current.piece.getLength();
-//                current = current.right;
-//            } else {
-//                return current.piece;
-//            }
-//        }
-//        return null;
-//    }
-
-    private void logTreeStructure() {
-        System.out.println("Current tree structure:");
-        logTreeNode(root, 0);
-    }
-
-    private void logTreeNode(RBTreeNode node, int depth) {
-        if (node == null) return;
-        logTreeNode(node.getLeft(), depth + 1);
-        System.out.println("Depth: " + depth + ", Piece: " + node.getPiece() + ", Subtree Length: " + node.getSubtreeLength());
-        logTreeNode(node.getRight(), depth + 1);
-    }
 }
+
+
+
 
 
