@@ -1,5 +1,6 @@
 package com.example.texteditorv2;
 
+// TODO - Add comments to class, will help in future.
 public class RedBlackTree {
     private RBTreeNode root;
 

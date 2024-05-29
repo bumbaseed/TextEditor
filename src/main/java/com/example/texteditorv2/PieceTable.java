@@ -2,9 +2,9 @@ package com.example.texteditorv2;
 
 
 class PieceTable {
-    final int averageBufferSize = 65535;
-    private final StringBuilder buffer;
-    private final RedBlackTree pieces;
+    final int averageBufferSize = 65535; // vs code buffer size
+    private StringBuilder buffer;
+    private RedBlackTree pieces;
 
     PieceTable() {
         buffer = new StringBuilder();
@@ -208,91 +208,28 @@ class PieceTable {
         }
     }
 
+    void loadContent(String content) {
+        // Clear the existing piece table and buffer to reset the editor
+        pieces = new RedBlackTree();
+        buffer = new StringBuilder();
 
-//    private void updateSubtreeLength(Piece piece) {
-//        RBTreeNode node = findNode(piece.getStart());
-//        while (node != null) {
-//            node.setSubtreeLength(node.getSubtreeLength() + piece.getLength());
-//            node = node.getParent();
-//        }
-//    }
+        // Split the loaded content into chunks for loading efficiency
+        int chunkSize = 1024 * 1024; // 1MB chunk size. can be scaled to handle larger files in future
+        int contentLength = content.length();
+        int offset = 0;
 
-//    private void updateStartPosition(int startPosition, int textLength) {
-//        RBTreeNode node = findNode(startPosition);
-//        while (node != null) {
-//            if (node.getPiece().getStart() >= startPosition) {
-//                node.getPiece().setStart(node.getPiece().getStart() + textLength);
-//            }
-//            node = successor(node);
-//        }
-//    }
+        while (offset < contentLength) {
+            int length = Math.min(chunkSize, contentLength - offset);
+            String chunk = content.substring(offset, offset + length);
 
-//    private RBTreeNode successor(RBTreeNode node) {
-//        if (node.getRight() != null) {
-//            return minimum(node.getRight());
-//        }
-//        RBTreeNode parent = node.getParent();
-//        while (parent != null && node == parent.getRight()) {
-//            node = parent;
-//            parent = parent.getParent();
-//        }
-//        return parent;
-//    }
-
-//    private RBTreeNode minimum(RBTreeNode node) {
-//        while (node.getLeft() != null) {
-//            node = node.getLeft();
-//        }
-//        return node;
-//    }
-
-//    private RBTreeNode findNode(int position) {
-//        return findNodePosition(position, pieces.getRoot());
-//    }
-
-//    private int calculatePosition(RBTreeNode node) {
-//        int position = 0;
-//
-//        while (node != null) {
-//            if (node.getParent() != null && node == node.getParent().getRight()) {
-//                position += (node.getParent().getLeft() != null ? node.getParent().getLeft().getSubtreeLength() : 0) + node.getParent().getPiece().getLength();
-//            }
-//            node = node.getParent();
-//        }
-//        return position;
-//    }
-
-//    private RBTreeNode findPieceIndex(int position) {
-//        if (position >= buffer.length()) {
-//            return null;
-//        }
-//        return findNodePosition(position, pieces.getRoot());
-//    }
-
-//    private void logTreeStructure() {
-//        System.out.println("Current tree structure:");
-//        logTreeNode(pieces.getRoot(), 0);
-//    }
-
-//    private void logTreeNode(RBTreeNode node, int depth) {
-//        if (node == null) return;
-//        logTreeNode(node.getLeft(), depth + 1);
-//        System.out.println("Depth: " + depth + ", Piece: " + node.getPiece() + ", Subtree Length: " + node.getSubtreeLength());
-//        logTreeNode(node.getRight(), depth + 1);
-//    }
-
-
-//    protected void updateTreeData(RBTreeNode node, int lengthDiff, int lineCountDiff) {
-//        while (node != null) {
-//            node.setSubtreeLength(node.getSubtreeLength() + lengthDiff);
-//            node.setSubtreeLFLeft(node.getSubtreeLFLeft() + lineCountDiff);
-//            if (node.getParent() != null && node == node.getParent().getLeft()) {
-//                node.getParent().setSizeLeft(node.getParent().getSizeLeft() + lengthDiff);
-//            }
-//            node = node.getParent();
-//        }
-//    }
-
+            // Insert each character in the chunk as a separate piece to maintain current piece structure.
+            for (int i = 0; i < chunk.length(); i++) {
+                insert(offset + i, String.valueOf(chunk.charAt(i)));
+            }
+            offset += length;
+        }
+        System.out.println("Content loaded successfully.");
+    }
 }
 
 
