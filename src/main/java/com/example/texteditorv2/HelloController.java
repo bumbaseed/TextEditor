@@ -29,6 +29,18 @@ public class HelloController {
     @FXML
     protected void onSaveButtonClick() {
         // TODO Logic for save button click
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save Text File");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
+            File selectedFile = fileChooser.showSaveDialog(saveBtn.getScene().getWindow());
+
+            if (selectedFile != null){
+                FileHandling.writeFile(selectedFile.getPath(), pieceTable.getText());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         System.out.println("Save button clicked");
     }
 
